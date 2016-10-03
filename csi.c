@@ -14,8 +14,10 @@ CSI-MIPI Driver
 #include <linux/pwm.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
-
-//#include "csi.h"
+#include <linux/kobject.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include "csi.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("skukreti");
@@ -31,22 +33,8 @@ MODULE_DESCRIPTION("pine64-csi");
 
 #define MIPI_NAME "pine64-csi"
 
-
-struct csi_cci_platform_data {
-	void (*enable_csi) (struct csi_cci_platform_data *pdata);
-	void (*enable_cci) (struct csi_cci_platform_data *pdata);
-
-}pine64_pdata;
-
-struct csi_cci_platform_device {
-	struct resource *r_mem;
-	struct platform_device *pdev;
-	void __iomem *csi_base;
-	void __iomem *ccu;
-	unsigned int virq;
-	struct task_struct *log_thread;
-
-}pine64_drv;
+struct csi_cci_platform_device pine64_drv;
+struct csi_cci_platform_data pine64_pdata; 
 
 
 static struct resource csi_resources[] = {
@@ -83,8 +71,8 @@ return;
 
 static int csi_cci_probe (struct platform_device *pdev)
 {
-	printk(KERN_INFO "CSI CCI Probe\n");
 	uint32_t reg=0;
+	printk(KERN_INFO "CSI CCI Probe\n");
 	pine64_drv.r_mem = platform_get_resource (pdev, IORESOURCE_MEM, 0);
 	pdev->dev.release = pdev_release;
 	
@@ -124,7 +112,8 @@ static int csi_cci_probe (struct platform_device *pdev)
 	iowrite32(0x01, pine64_drv.csi_base + CCI_CTRL_REG);
 	pr_info("CCI_CTRL: %x\n", ioread32(pine64_drv.csi_base + CCI_CTRL_REG ));
 		
-
+	sysfs_init();
+	
 	return 0;
 }
 
@@ -133,6 +122,7 @@ static int csi_cci_remove (struct platform_device *pdev)
 {
 
 	printk(KERN_INFO "CSI CCI Remove \n");
+	sysfs_cleanup();
 	iounmap(pine64_drv.csi_base);
 	iounmap(pine64_drv.ccu);
 	release_mem_region(pine64_drv.r_mem->start, resource_size(pine64_drv.r_mem));

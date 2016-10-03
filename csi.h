@@ -2,8 +2,30 @@
 #define CSI_H_
 
 
+struct csi_cci_platform_data {
+        void (*enable_csi) (struct csi_cci_platform_data *pdata);
+        void (*enable_cci) (struct csi_cci_platform_data *pdata);
+
+};
 
 
+struct csi_cci_platform_device {
+        struct resource *r_mem;
+        struct platform_device *pdev;
+        void __iomem *csi_base;
+        void __iomem *ccu;
+        unsigned int virq;
+        struct task_struct *log_thread;
+};
+
+
+/* SYSFS Functions called from probe */
+int sysfs_init(void);
+void sysfs_cleanup(void);
+
+
+
+#if 0
 #define ADD_REG(name, offset) (#define CSI_##name##_REF offset)
 #define ADD_CCI(name, offset) (#define CCI_## offset)
 
@@ -42,6 +64,6 @@ ADD_CCI(LC_TRIG 0x3018);
 ADD_CCI(FIFO_ACC 0x3100);
 ADD_CCI(RSV_REG, 0x3200);
 
-
+#endif
 
 #endif
